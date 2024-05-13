@@ -322,7 +322,7 @@ CheckClipboard(*)
     Global replacementBeforeThisTrim
 
     Global triggerAfterThisTrim
-    Global replacementAfterThisTrim
+    ; Global replacementAfterThisTrim
 
     hsRegex := "(?Jim)^:(?<Opts>[^:]+)*:(?<Trig>[^:]+)::(?:f\((?<Repl>[^,)]*)[^)]*\)|(?<Repl>[^;\v]+))?(?<fCom>\h*;\h*(?:\bFIXES\h*\d+\h*WORDS?\b)?(?:\h;)?\h*(?<mCom>.*))?$"
     hhReplacementMatchesEdit.CurrMatches := ""
@@ -344,18 +344,9 @@ CheckClipboard(*)
         hhCurrentReplacement := replacementBeforeThisTrim := replacementBeforeTrimming := hhReplacementEdit.text := hotstringFromRegex.Repl := Trim(hotstringFromRegex.Repl, '"')
         hhCommentEdit.text := hotstringFromRegex.mCom
 
-        If InStr(hotstringFromRegex.Opts, "*")
-        {
-            If InStr(hotstringFromRegex.Opts, "?")
-                hhMidRadio.Value := 1
-            Else
-                hhBeginRadio.Value := 1
-
-        }
-        Else If InStr(hotstringFromRegex.Opts, "?")
-            hhEndRadio.Value := 1
-        Else
-            hhMidRadio.Value := 1
+        hhBeginRadio.Value := InStr(hotstringFromRegex.Opts, "*") ? (InStr(hotstringFromRegex.Opts, "?") ? 0 : 1) : 0
+        hhMidRadio.Value := InStr(hotstringFromRegex.Opts, "*") ? (InStr(hotstringFromRegex.Opts, "?") ? 1 : 0) : 1
+        hhEndRadio.Value := InStr(hotstringFromRegex.Opts, "*") ? 0 : (InStr(hotstringFromRegex.Opts, "?") ? 1 : 0)
 
         ExamineWords(hhCurrentTrigger, hhCurrentReplacement)
     }
@@ -459,20 +450,16 @@ ExamineWords(stringTrigger, stringReplacement)
     {
         Loop LoopNum
         {
-            bsubT := (arrayT[A_Index])
-            bsubR := (arrayR[A_Index])
-            If (bsubT = bsubR)
-                beginning .= bsubT
+            If (arrayT[A_Index] = arrayR[A_Index])
+                beginning .= arrayT[A_Index]
             else
                 break
         }
 
         Loop LoopNum
         {
-            RevIndex := (LenT - A_Index) + 1
-            esubT := (arrayT[RevIndex])
-            RevIndex := (LenR - A_Index) + 1
-            esubR := (arrayR[RevIndex])
+            esubT := (arrayT[(LenT - A_Index) + 1])
+            esubR := (arrayR[(LenR - A_Index) + 1])
             If (esubT = esubR)
                 ending := esubT . ending
             else
@@ -581,12 +568,12 @@ hhSubFuncExamControlHandler(*)
     (ControlPaneOpen = 1) ? hhToggleButtonsControlHandler(False)
         : hhToggleButtonsControlHandler(True)
 
-        ControlPaneOpen := (ControlPaneOpen = 1)
-            ? 0
-                : 1
+    ControlPaneOpen := (ControlPaneOpen = 1)
+        ? 0
+            : 1
 
-        hhToggleExamButtonHandler(False)
-        hh.Show('Autosize yCenter')
+    hhToggleExamButtonHandler(False)
+    hh.Show('Autosize yCenter')
 }
 
 hhExamHandler(*)
@@ -715,109 +702,114 @@ hhCheckHandler(*)
     Global tTriggerString := hhTriggerEdit.text
     Global tReplaceString := hhReplacementEdit.text
     CombinedValidMsg := ValidationFunction(tMyDefaultOpts, tTriggerString, tReplaceString)
-    biggerMsgBox(CombinedValidMsg, 0)
+    biggerMsgBox(tMyDefaultOpts, tTriggerString, tReplaceString, CombinedValidMsg, 0)
     Return
 }
 
-biggerMsgBox(thisMess, secondButt)
+biggerMsgBox(options, trigger, replacement, thisMess, bbShowAppendButton := 0)
 {
-    Global mbTitle := ""
-    Global bb
     A_Clipboard := thisMess
 
     if (IsObject(bb))
         bb.Destroy()
 
-    bb := Gui(, 'Validity Report')
+    Global bb := Gui(, 'Validity Report')
     bb.SetFont('s11 ' hhFontColor)
     bb.BackColor := hhGUIColor, hhGUIColor
 
-    (mbTitle := bb.Add('Text', , 'For proposed new item:')).Focus()
+    (bbMessageBoxTitle := bb.Add('Text', , 'For proposed new item:')).Focus()
 
     bb.SetFont(myBigFont)
-    proposedHS := ':' tMyDefaultOpts ':' tTriggerString '::' tReplaceString
-    bb.Add('Text', (strLen(proposedHS) > 90 ? 'w600 ' : '') 'xs yp+22', proposedHS)
+    proposedHS := ':' options ':' trigger '::' replacement
+    bbNewHotstringLabel := bb.Add('Text', (strLen(proposedHS) > 90 ? 'w600 ' : '') 'xs yp+22', proposedHS)
 
     bb.SetFont('s11 ')
-    secondButt = 0 ? bb.Add('Text', , "===Validation Check Results===") : ''
+    bbShowAppendButton = 0 ? bb.Add('Text', , "===Validation Check Results===") : ''
 
     bb.SetFont(myBigFont)
-    arrayBBItem := StrSplit(thisMess, "*|*")
-    bbItem2 := (InStr(arrayBBItem[2], "`n", , , 10))
-        ? subStr(arrayBBItem[2], 1, inStr(arrayBBItem[2], "`n", , , 10)) "`n## Too many conflicts to show in form ##"
-            : arrayBBItem[2]
+    arrayValidityCheckResults := StrSplit(thisMess, "*|*")
+    bbHotstringValidityMessage := (InStr(arrayValidityCheckResults[2], "`n", , , 10))
+        ? subStr(arrayValidityCheckResults[2], 1, inStr(arrayValidityCheckResults[2], "`n", , , 10)) "`n## Too many conflicts to show in form ##"
+            : arrayValidityCheckResults[2]
 
     edtSharedSettings := ' -VScroll ReadOnly -E0x200 Background'
 
-    bb.Add('Edit', (inStr(arrayBBItem[1], '-Okay.') ? myGreen : myRed) edtSharedSettings hhGUIColor, arrayBBItem[1])
-    trigEdtBox := bb.Add('Edit', (strLen(bbItem2) > 104 ? ' w600 ' : ' ') (inStr(bbItem2, '-Okay.') ? myGreen : myRed) edtSharedSettings hhGUIColor, bbItem2)
+    bbOptionsEdit := bb.Add('Edit', (inStr(arrayValidityCheckResults[1], '-Okay.') ? myGreen : myRed) edtSharedSettings hhGUIColor, arrayValidityCheckResults[1])
+    bbTriggerEdit := bb.Add('Edit', (strLen(bbHotstringValidityMessage) > 104 ? ' w600 ' : ' ') (inStr(bbHotstringValidityMessage, '-Okay.') ? myGreen : myRed) edtSharedSettings hhGUIColor, bbHotstringValidityMessage)
 
-    bb.Add('Edit', (strLen(arrayBBItem[3]) > 104 ? ' w600 ' : ' ') (inStr(arrayBBItem[3], '-Okay.') ? myGreen : myRed) edtSharedSettings hhGUIColor, arrayBBItem[3])
-    trigEdtBox.OnEvent('Focus', findInScript)
-
+    bbReplacementEdit := bb.Add('Edit', (strLen(arrayValidityCheckResults[3]) > 104 ? ' w600 ' : ' ') (inStr(arrayValidityCheckResults[3], '-Okay.') ? myGreen : myRed) edtSharedSettings hhGUIColor, arrayValidityCheckResults[3])
+    
     bb.SetFont('s11 ' hhFontColor)
-    (secondButt = 1) ? bb.Add('Text', , "==============================`nAppend HotString Anyway?") : ''
+    bbAppendWithConflictLabel := (bbShowAppendButton = 1) ? bb.Add('Text', , "==============================`nAppend HotString Anyway?") : ''
+    
+    bbAppendButton := bb.Add('Button', , 'Append Anyway')
+    
+    if (bbShowAppendButton != 1)
+        bbAppendButton.Visible := False
+        
+    bbCloseButton := bb.Add('Button', 'x+5 Default', 'Close')
+        
+    If not inStr(bbHotstringValidityMessage, '-Okay.')
+        bbAutoLookUpToggle := bb.Add('Checkbox', 'x+5 Checked' AutoLookupFromValidityCheck, 'Auto Lookup`nin editor')
+        
+    bb.Show('yCenter x' (A_ScreenWidth / 2))
+        
+    WinSetAlwaysontop(1, "A")
 
-        bbAppend := bb.Add('Button', , 'Append Anyway')
-        bbAppend.OnEvent 'Click', (*) => Appendit(tMyDefaultOpts, tTriggerString, tReplaceString)
-        bbAppend.OnEvent 'Click', (*) => bb.Destroy()
+    bbTriggerEdit.OnEvent('Focus', findInScript(AutoLookupFromValidityCheck, trigger, thisMess))
+    bbAppendButton.OnEvent('Click', (*) => Appendit(tMyDefaultOpts, trigger, replacement))
+    bbAppendButton.OnEvent('Click', (*) => bb.Destroy())
+    bbCloseButton.OnEvent('Click', (*) => bb.Destroy())
+    bb.OnEvent('Escape', (*) => bb.Destroy())
+    }
 
-        if (secondButt != 1)
-            bbAppend.Visible := False
-
-        bbClose := bb.Add('Button', 'x+5 Default', 'Close')
-        bbClose.OnEvent 'Click', (*) => bb.Destroy()
-
-        If not inStr(bbItem2, '-Okay.')
-            Global bbAuto := bb.Add('Checkbox', 'x+5 Checked' AutoLookupFromValidityCheck, 'Auto Lookup`nin editor')
-
-        bb.Show('yCenter x' (A_ScreenWidth / 2))
-
-        WinSetAlwaysontop(1, "A")
-
-        bb.OnEvent 'Escape', (*) => bb.Destroy()
-}
-
-findInScript(*)
+findInScript(autolookup := 0, *)
 {
     Global filenameThisScript
     Global pathDefaultEditor
 
-    A_Clipboard := ""
-
-    If (bbAuto.Value = 0)
+    If (autolookup = 0)
         Return
+
+    A_Clipboard := ""
+    activeWin := WinActive("A")
+    activeControl := ControlGetFocus("ahk_ID " activeWin)
+    
     if (GetKeyState("LButton", "P"))
-        KeyWait "LButton", "U"
-    SendInput "^c"
+        KeyWait("LButton", "U")
+
+    SendInput("^c")
     If !ClipWait(1, 0)
         Return
 
     if WinExist(filenameThisScript)
-        WinActivate
+        WinActivate(filenameThisScript)
     else
     {
         Run('"' pathDefaultEditor "' '" filenameThisScript "'")
-        runSuccess := WinWait(filenameThisScript, , 5)
-        If (runSuccess = 0)
+        If !WinWait(filenameThisScript, , 5)
+        {
             Msgbox("Failed to open " filenameThisScript " in your editor.")
-        WinActivate(filenameThisScript)
+            Return
+        }
+        
+        else
+            WinActivate(filenameThisScript)
     }
     If RegExMatch(A_Clipboard, "^\d{2,}")
-        SendInput "^g" . A_Clipboard
+        SendInput("^g" . A_Clipboard)
     else
     {
-        SendInput "^f"
-        sleep 200
-        SendInput "^v"
+        SendInput("^f")
+        sleep(200)
+        SendInput("^v")
     }
-    mbTitle.Focus()
+    WinActivate("ahk_ID " activeWin)
+    ControlFocus("ahk_ID " activeWin, "ahk_id " activeControl)
 }
 
-ValidationFunction(tMyDefaultOpts, tTriggerString, tReplaceString)
+ValidationFunction(paramOpts, paramTrigger, paramReplacement)
 {
-    Global validHotDupes := ""
-    Global validHotMisspells := ""
     Global ACitemsStartAt
 
     hhActivateFilterHandler()
@@ -827,11 +819,11 @@ ValidationFunction(tMyDefaultOpts, tTriggerString, tReplaceString)
     validRep := ""
     ThisFile := Fileread(A_ScriptName)
 
-    validOpts := (tMyDefaultOpts = "") ? "Okay." : CheckOptions(tMyDefaultOpts)
+    validOpts := (paramOpts = "") ? "Okay." : CheckOptions(paramOpts)
 
-    If (tTriggerString = "") || (tTriggerString = myPrefix) || (tTriggerString = mySuffix)
+    If (paramTrigger = "") || (paramTrigger = myPrefix) || (paramTrigger = mySuffix)
         validHot := "HotString box should not be empty."
-    Else If InStr(tTriggerString, ":")
+    Else If InStr(paramTrigger, ":")
         validHot := "Don't include colons."
     Else
     {
@@ -841,12 +833,12 @@ ValidationFunction(tMyDefaultOpts, tTriggerString, tReplaceString)
                 continue
             If RegExMatch(A_LoopField, "i):(?P<Opts>[^:]+)*:(?P<Trig>[^:]+)", &loo)
             {
-                validHotDupes .= CheckDupeTriggers(A_Index, A_Loopfield, tTriggerString, tMyDefaultOpts, loo.Trig, loo.Opts)
-                validHotDupes .= CheckMiddleConflicts(A_Index, A_Loopfield, tTriggerString, tMyDefaultOpts, loo.Trig, loo.Opts)
-                validHotDupes .= CheckPotentialMiddleConflicts(A_Index, A_Loopfield, tTriggerString, tMyDefaultOpts, loo.Trig, loo.Opts)
-                validHotDupes .= CheckPotentialBeginningEndConflicts(A_Index, A_Loopfield, tTriggerString, tMyDefaultOpts, loo.Trig, loo.Opts)
-                validHotDupes .= CheckWordBeginningConflicts(A_Index, A_Loopfield, tTriggerString, tMyDefaultOpts, loo.Trig, loo.Opts)
-                validHotDupes .= CheckWordEndingConflicts(A_Index, A_Loopfield, tTriggerString, tMyDefaultOpts, loo.Trig, loo.Opts)
+                validHot .= CheckDupeTriggers(A_Index, A_Loopfield, paramTrigger, paramOpts, loo.Trig, loo.Opts)
+                validHot .= CheckMiddleConflicts(A_Index, A_Loopfield, paramTrigger, paramOpts, loo.Trig, loo.Opts)
+                validHot .= CheckPotentialMiddleConflicts(A_Index, A_Loopfield, paramTrigger, paramOpts, loo.Trig, loo.Opts)
+                validHot .= CheckPotentialBeginningEndConflicts(A_Index, A_Loopfield, paramTrigger, paramOpts, loo.Trig, loo.Opts)
+                validHot .= CheckWordBeginningConflicts(A_Index, A_Loopfield, paramTrigger, paramOpts, loo.Trig, loo.Opts)
+                validHot .= CheckWordEndingConflicts(A_Index, A_Loopfield, paramTrigger, paramOpts, loo.Trig, loo.Opts)
                 continue
             }
             Else
@@ -856,11 +848,11 @@ ValidationFunction(tMyDefaultOpts, tTriggerString, tReplaceString)
         }
     }
 
-    validRep := (tReplaceString = "")
+    validRep := (paramReplacement = "")
         ? "Replacement string box should not be empty."
-            : (SubStr(tReplaceString, 1, 1) = ":")
+            : (SubStr(paramReplacement, 1, 1) = ":")
                 ? "Don't include the colons."
-                : (tReplaceString = tTriggerString)
+                : (paramReplacement = paramTrigger)
                     ? "Replacement string SAME AS Trigger string."
                     : "Okay."
 
