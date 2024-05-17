@@ -370,6 +370,7 @@ NormalStartup(stringTrigger, stringReplacement)
     Global origTriggerTypo := ""
     Global DefaultBoilerPlateOpts
     Global DefaultAutoCorrectOpts
+    Global hhReplacementEdit, hhTriggerEdit, hhOptionsEdit, hhCommentEdit
 
     If ((StrLen(stringTrigger) - StrLen(StrReplace(stringTrigger, " ")) > 2) || InStr(stringReplacement, "`n"))
     {
@@ -688,7 +689,7 @@ hhAppendHandler(*)
     CombinedValidMsg := ValidationFunction(tMyDefaultOpts, tTriggerString, tReplaceString)
 
     If (!InStr(CombinedValidMsg, "-Okay.", , , 3))
-        biggerMsgBox(CombinedValidMsg, 1)
+        biggerMsgBox(tMyDefaultOpts, tTriggerString, tReplaceString, CombinedValidMsg, 1)
     else
     {
         Appendit(tMyDefaultOpts, tTriggerString, tReplaceString)
@@ -708,6 +709,7 @@ hhCheckHandler(*)
 
 biggerMsgBox(options, trigger, replacement, thisMess, bbShowAppendButton := 0)
 {
+    Global hhGUIColor, hhFontColor, myBigFont, AutoLookupFromValidityCheck
     A_Clipboard := thisMess
 
     if (IsObject(bb))
@@ -756,19 +758,20 @@ biggerMsgBox(options, trigger, replacement, thisMess, bbShowAppendButton := 0)
         
     WinSetAlwaysontop(1, "A")
 
-    bbTriggerEdit.OnEvent('Focus', findInScript(AutoLookupFromValidityCheck, trigger, thisMess))
+    bbTriggerEdit.OnEvent('Focus', findInScript)
     bbAppendButton.OnEvent('Click', (*) => Appendit(tMyDefaultOpts, trigger, replacement))
     bbAppendButton.OnEvent('Click', (*) => bb.Destroy())
     bbCloseButton.OnEvent('Click', (*) => bb.Destroy())
     bb.OnEvent('Escape', (*) => bb.Destroy())
     }
 
-findInScript(autolookup := 0, *)
+findInScript(*)
 {
     Global filenameThisScript
     Global pathDefaultEditor
+    Global AutoLookupFromValidityCheck
 
-    If (autolookup = 0)
+    If (AutoLookupFromValidityCheck = 0)
         Return
 
     A_Clipboard := ""
@@ -814,24 +817,20 @@ ValidationFunction(paramOpts, paramTrigger, paramReplacement)
 
     hhActivateFilterHandler()
 
-    validOpts := ""
-    validHot := ""
-    validRep := ""
-    ThisFile := Fileread(A_ScriptName)
-
     validOpts := (paramOpts = "") ? "Okay." : CheckOptions(paramOpts)
 
-    If (paramTrigger = "") || (paramTrigger = myPrefix) || (paramTrigger = mySuffix)
+    validHot := ""
+    if (paramTrigger = "" || paramTrigger = myPrefix || paramTrigger = mySuffix)
         validHot := "HotString box should not be empty."
-    Else If InStr(paramTrigger, ":")
+    else if InStr(paramTrigger, ":")
         validHot := "Don't include colons."
-    Else
+    else
     {
-        Loop Parse, ThisFile, "`n", "`r"
+        Loop Parse, Fileread(A_ScriptName), "`n", "`r"
         {
-            If (A_Index < ACitemsStartAt) or (SubStr(trim(A_LoopField, " `t"), 1, 1) != ":")
+            if (A_Index < ACitemsStartAt || SubStr(trim(A_LoopField, " `t"), 1, 1) != ":")
                 continue
-            If RegExMatch(A_LoopField, "i):(?P<Opts>[^:]+)*:(?P<Trig>[^:]+)", &loo)
+            if RegExMatch(A_LoopField, "i):(?P<Opts>[^:]+)*:(?P<Trig>[^:]+)", &loo)
             {
                 validHot .= CheckDupeTriggers(A_Index, A_Loopfield, paramTrigger, paramOpts, loo.Trig, loo.Opts)
                 validHot .= CheckMiddleConflicts(A_Index, A_Loopfield, paramTrigger, paramOpts, loo.Trig, loo.Opts)
@@ -841,20 +840,23 @@ ValidationFunction(paramOpts, paramTrigger, paramReplacement)
                 validHot .= CheckWordEndingConflicts(A_Index, A_Loopfield, paramTrigger, paramOpts, loo.Trig, loo.Opts)
                 continue
             }
-            Else
+            else
             {
-                Continue
+                continue
             }
         }
     }
 
+    if (validHot = "")
+        validHot := "Okay."
+
     validRep := (paramReplacement = "")
         ? "Replacement string box should not be empty."
-            : (SubStr(paramReplacement, 1, 1) = ":")
-                ? "Don't include the colons."
-                : (paramReplacement = paramTrigger)
-                    ? "Replacement string SAME AS Trigger string."
-                    : "Okay."
+        : (SubStr(paramReplacement, 1, 1) = ":")
+            ? "Don't include the colons."
+            : (paramReplacement = paramTrigger)
+                ? "Replacement string SAME AS Trigger string."
+                : "Okay."
 
     CombinedValidMsg := "OPTIONS BOX `n-"
         . validOpts
@@ -864,7 +866,6 @@ ValidationFunction(paramOpts, paramTrigger, paramReplacement)
         . validRep
 
     Return CombinedValidMsg
-
 }
 
 CheckOptions(tMyDefaultOpts)
@@ -949,8 +950,6 @@ Appendit(tMyDefaultOpts, tTriggerString, tReplaceString)
     Global rMatches
     Global tMatches
     Global AutoCommentFixesAndMisspells
-    Global aComStr
-    Global tComStr
     Global AutoEnterNewEntry
     Global targetWindow
     Global hhMakeFunctionToggle
@@ -1235,9 +1234,14 @@ hhActivateFilterHandler(ViaExamButt := "No", *)
 
     If (ViaExamButt = "Yes")
     {
-        hhMidRadio.value := (inStr(hhCurrentOptions, "*") and inStr(hhCurrentOptions, "?")) ? 1 : 0
-        hhBeginRadio.value := (inStr(hhCurrentOptions, "*") and !InStr(hhCurrentOptions, "?")) ? 1 : 0
-        hhEndRadio.value := (!InStr(hhCurrentOptions, "*") and InStr(hhCurrentOptions, "?")) ? 1 : 0
+        If (InStr(hhCurrentOptions, "*") and InStr(hhCurrentOptions, "?"))
+            hhMidRadio.value := 1, hhBeginRadio.value := 0, hhEndRadio.value := 0
+        Else If (InStr(hhCurrentOptions, "*") and !InStr(hhCurrentOptions, "?"))
+            hhMidRadio.value := 0, hhBeginRadio.value := 1, hhEndRadio.value := 0
+        Else If (!InStr(hhCurrentOptions, "*") and InStr(hhCurrentOptions, "?"))
+            hhMidRadio.value := 0, hhBeginRadio.value := 0, hhEndRadio.value := 1
+        Else 
+            hhMidRadio.value := 0, hhBeginRadio.value := 0, hhEndRadio.value := 0
     }
 
     Loop Read, pathWordList
@@ -2034,6 +2038,13 @@ CopyFilesAndFolders(SourcePattern, DestinationFolder, DoOverwrite := false)
 #Hotstring ZXB0
 _F(, "SE")
 
-ACitemsStartAt := A_LineNumber + 10
+ACitemsStartAt := A_LineNumber + 6
 
 #INCLUDE "*i %A_ScriptDir%\Lib\UserHotstringFile.ahk"
+:B0X*:complee::_f("complet") ; Fixes 16 words 
+:B0X?:eacky::_f("eaky") ; Fixes 11 words 
+:B0X*:totalli::_f("totali") ; Fixes 36 words , but misspells totalling (). 
+:B0X:bene::_f("been") ; Fixes 5 words , but misspells 4 words !!! 
+:B0X*:calender::_f("calendar") ; Fixes 4 words , but misspells 6 words !!! 
+:B0X*:thah::_f("tha") ; Fixes 152 words Fix thahnk
+:B0X?:actony::_f("ectomy") ; Fixes 68 words 

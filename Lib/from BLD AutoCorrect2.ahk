@@ -297,9 +297,9 @@ AllFilesExist()
         filenameMCLog,
         pathWordList
     ]
-    for file in files
+    for item in files
     {
-        If (!FileExist(file))
+        If (!FileExist(item))
             return false
     }
     return true
