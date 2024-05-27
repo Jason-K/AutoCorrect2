@@ -36,6 +36,8 @@ FontColor := strReplace(subStr(fColor, -6), "efault", "Default")
 ; Use either that above or below color assignments, not both.
 */
                         ; /*
+
+;; MC vars
 ListColor               := "Default"
 FontColor               := "Default"
 gColor                  := "Default"
@@ -61,10 +63,27 @@ myAutoCorrectScript     := parentDir "\AutoCorrect2.ahk"
 ;========= LOG ANALYSIS OPTIONS ================================================
 runAnalysisHotkey       := "#^+q"    ; Change hotkey if desired.
 sneakPeekHotkey         := "!q"    ; Change hotkey if desired.
-ShowX                   := 12    ; Show max of top X results.
+ShowX                   := 15    ; Show max of top X results.
 SendToHH                := 1    ; Export directly to HotSting Helper. 1=yes / 0=no
 
-MyAhkEditorPath         := "C:\Users\" A_UserName "\AppData\Local\Programs\Microsoft VS Code\Code.exe"    ; <--- specific to Steve's setup. Put path to your editor.
+MyAhkEditorPath := (FileExist("C:\Users\" . A_UserName . "\AppData\Local\Programs\Microsoft VS Code\Code.exe"))
+    ? "C:\Users\" . A_UserName . "\AppData\Local\Programs\Microsoft VS Code\Code.exe"
+        : "Notepad.exe"
+
+;; AC vars
+
+
+getStartLine()
+SortByBS := 1
+AllStrs := FileRead(A_ScriptName)
+TotalLines := StrSplit(AllStrs, "`n").Length
+pg := Gui()
+pg.Opt("-MinimizeBox +alwaysOnTop +Owner")
+MyProgress := pg.Add("Progress", "w400 h30 cGreen Range0-" . TotalLines, "0")
+reportType := "Top " ShowX (SortByBS ? " backspaced autocorrects." : " kept autocorrects.")
+pg.Title := reportType "  Percent complete: 0 %."
+pg.Show()
+
 
 ;--- create systray menu ----
 TraySetIcon(parentDir "\Media\JustLog.ico")    ; A fun homemade "log" icon that Steve made.
@@ -156,8 +175,8 @@ peekToolTip(*)    ; sneak-a-peek at working variables.
    ToolTip(, , , 7)    ; Remove (only) 'sneak peek' tooltip, if showing.
 }
 
-soundBeep(1600, 75)
-soundBeep(1700, 50)    ; startup announcement
+; soundBeep(1600, 75)
+; soundBeep(1700, 50)    ; startup announcement
 
 ; This creates the inputHook that actually watches the keypresses.
 tih := InputHook('L0 V I2'), typoCache := ""
@@ -707,3 +726,68 @@ Class ToolTipOptions
    }
 }
 ; ============= Bottom of TOOLTIP OPTIONS CLASS ===============
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;===============================================================================
+
+
+Loop parse AllStrs, "`n`r"
+{	MyProgress.Value += 1
+	; pg.Title := "Lines of file remaining: " (TotalLines - MyProgress.Value) "..." ; For progress bar.
+	pg.Title := reportType "  Percent complete: " Round((MyProgress.Value/TotalLines)*100) "%." ; For progress bar.
+	If A_Index < startLine || InStr(A_LoopField, "Cap ") ; Skip these.
+		Continue
+	okTally := 0, bsTally := 0
+	oStr := SubStr(A_LoopField, 15) ; o is "outter loop"
+	Loop parse AllStrs, "`n`r" {
+		If A_Index < startLine || InStr(A_LoopField, "Cap ") ; Skip these.
+			Continue
+		iStr := SubStr(A_LoopField, 15) ; i is "inner loop"
+		If iStr = oStr { 
+			If SubStr(A_LoopField, 12, 2) = "--" ; "--" means the item was logged, and backspace was not pressed.
+				okTally++
+			If SubStr(A_LoopField, 12, 2) = "<<" ; "<<" means Backspace was pressed right after autocorrection.
+				bsTally++
+		}
+	}
+	If SortByBS = 1 
+		Report .=  bsTally "<< and " okTally "-- for" ((bsTally>9 or okTally>9)? "oneTab":"twoTabs") oStr "`n"
+	else 
+		Report .=  okTally "-- and " bsTally "<< for" ((okTally>9 or bsTally>9)? "oneTab":"twoTabs") oStr "`n"
+	AllStrs := strReplace(AllStrs, oStr, "Cap fix") ; Replace it with 'cap fix' so we don't keep finding it.
+}
+
+Report := Sort(Sort(Report, "/U"), "NR") ; U is 'remove duplicates.' NR is 'numeric' and 'reverse sort.'
+For idx, item in strSplit(Report, "`n")
+	If idx <= ShowX ; Only use first X lines.
+		trunkReport .= item "`n"
+	else break
+msgTrunkReport := strReplace(strReplace(trunkReport, "oneTab", "`t"), "twoTabs", "`t") ; So right colomn lines up in msgboxes.
+txtTrunkReport := strReplace(strReplace(trunkReport, "oneTab", "`t"), "twoTabs", "`t`t") ; So right colomn lines up in text editors.
+
+pg.Destroy() ; Remove progress bar.
+msgbox reportType "`n=====================`n" msgTrunkReport, "Autocorrect Report"
+ExitApp ; Kill script when msgbox is closed. 
+#HotIf WinActive("Autocorrect Report") ; Ctrl+C sends report to clipboard, but only if msgbox is active window. 
+	^c::A_Clipboard := reportType "`n=====================`n" txtTrunkReport
+	^Esc::ExitApp ; Ctrl+Esc to Kill/End process, if you're tired of waiting... 
+#HotIf
+
+getStartLine(*) {
+	Global startLine := A_LineNumber + 2
+}
