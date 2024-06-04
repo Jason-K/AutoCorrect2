@@ -1,22 +1,20 @@
 ﻿#Requires AutoHotkey v2+
 #SingleInstance Force
-#MaxThreadsPerHotkey 10
-#Hotstring ZXB0
 SetWorkingDir(A_ScriptDir)
 SetTitleMatchMode("RegEx")
 
-
 pathDefaultEditor := (FileExist("C:\Users\" . A_UserName . "\AppData\Local\Programs\Microsoft VS Code\Code.exe"))
     ? "C:\Users\" . A_UserName . "\AppData\Local\Programs\Microsoft VS Code\Code.exe"
-    : "Notepad.exe"
+        : "Notepad.exe"
 
 urlGitRepo := "https://github.com/kunkel321/AutoCorrect2"
 
-folderGitCopy := A_ScriptDir "\GitHub"
+activeScriptsFolder := A_ScriptDir "\Auto Launch"
 
-folderLib := A_ScriptDir '\Lib'
-folderMedia := A_ScriptDir '\Icons'
-folderLogs := A_ScriptDir '\Logs'
+folderLib := activeScriptsFolder '\Lib'
+folderGitCopy := folderLib '\GitHub'
+folderMedia := activeScriptsFolder '\Media\Icons'
+folderLogs := activeScriptsFolder '\Logs'
 
 filenameThisScript := A_ScriptName
 filenameUserHotstrings := "UserHotstringsFile.ahk"
@@ -52,24 +50,33 @@ mapKeyFolderContents[folderLogs] := [
 
 mapKeyFolderContents[folderMedia] := []
 
-loop files, folderGitCopy "\Icons\*.*"
+loop files, folderGitCopy "\Icons\*.ico"
     mapKeyFolderContents[folderMedia].push(A_LoopFileName)
 
 
 for key in mapKeyFolderContents
 {
-    if !DirExist(key) {
+    if !DirExist(key)
+    {
         DirCreate(key)
     }
 
-    for each, item in mapKeyFolderContents[key] {
-        if !FileExist(key . '\' . item) {
-            try {
-               FileCopy(folderGitCopy . '\' . item, key . '\' . item)
-            } catch {
-                try {
+    for each, item in mapKeyFolderContents[key]
+    {
+        if !FileExist(key . '\' . item)
+        {
+            try
+            {
+                FileCopy(folderGitCopy . '\' . item, key . '\' . item)
+            }
+            catch
+            {
+                try
+                {
                     FileAppend("", key . '\' . item)
-                } catch {
+                }
+                catch
+                {
                     MsgBox("Failed to create " key . '\' . item)
                 }
             }
@@ -77,11 +84,9 @@ for key in mapKeyFolderContents
     }
 }
 
+hhNameForGUITitleBar := "HotString Helper 2"
 
-
-hhFormName := "HotString Helper 2"
-
-hh_Hotkey := "#h"
+hhGUIHotkey := "#h"
 
 myPilcrow := "¶"
 myDot := "• "
@@ -97,7 +102,7 @@ addFirstLetters := 5
 tooSmallLen := 2
 
 AutoLookupFromValidityCheck := 0
-AutoCommentFixesAndMisspells := 1`
+AutoCommentFixesAndMisspells := 1
 
 hhGUIColor := "F5F5DC"
 hhFontColor := "c003366"
@@ -136,7 +141,6 @@ tArrStep := []
 rArrStep := []
 
 
-
 TraySetIcon(folderMedia . "\Psicon.ico")
 
 acMenu := A_TrayMenu
@@ -144,20 +148,16 @@ acMenu.Delete
 acMenu.SetColor("Silver")
 
 acMenu.Add("Edit This Script", handleEditScript)
-acMenu.Add("Run Printer Tool", handlePrinterTool)
-acMenu.Add("System Up Time", handleUptime)
 acMenu.Add("Reload Script", (*) => Reload())
 acMenu.Add("List Lines Debug", (*) => ListLines())
 acMenu.Add("Exit Script", (*) => ExitApp())
 
 acMenu.SetIcon("Edit This Script", folderMedia . "\edit-Blue.ico")
-acMenu.SetIcon("Run Printer Tool", folderMedia . "\printer-Blue.ico")
-acMenu.SetIcon("System Up Time", folderMedia . "\clock-Blue.ico")
 acMenu.SetIcon("Reload Script", folderMedia . "\repeat-Blue.ico")
 acMenu.SetIcon("List Lines Debug", folderMedia . "\ListLines-Blue.ico")
 acMenu.SetIcon("Exit Script", folderMedia . "\exit-Blue.ico")
 
-hh := Gui('', hhFormName)
+hh := Gui('', hhNameForGUITitleBar)
 
 hh.BackColor := hhGuiColor
 FontColor := (hhFontColor != "") ? "c" . hhFontColor : ""
@@ -199,7 +199,7 @@ hh.SetFont('s10')
 hhLeftTrimButton := hh.AddButton('vbutLtrim xm h50  w' . (wFactor + 182 / 6), '>>')
 
 hh.SetFont('s14')
-hhTypoLabel := hh.AddText('vTypoLabel -wrap +center cBlue x+1 w' . (wFactor + 182 * 5 / 3), hhFormName)
+hhTypoLabel := hh.AddText('vTypoLabel -wrap +center cBlue x+1 w' . (wFactor + 182 * 5 / 3), hhNameForGUITitleBar)
 
 hh.SetFont('s10')
 hhRightTrimButton := hh.AddButton('vbutRtrim x+1 h50 w' . (wFactor + 182 / 6), '<<')
@@ -241,8 +241,8 @@ hhCancelButton.OnEvent("Click", hhButtonCancelHandler)
 hhBiggerButton.OnEvent("Click", hhSizeToggleHandler)
 hhMakeFunctionToggle.OnEvent('click', hhSaveAsFunctionHandler)
 hhShowSymbolsButton.OnEvent("Click", hhToggleSymbolsHandler)
-hhLeftTrimButton.OnEvent('click', hhTrimLeftHandler)
-hhRightTrimButton.OnEvent('click', hhTrimRightHandler)
+hhLeftTrimButton.OnEvent('click', hhTrimHandler)
+hhRightTrimButton.OnEvent('click', hhTrimHandler)
 hhExamButton.OnEvent("ContextMenu", hhSubFuncExamControlHandler)
 hhTriggerEdit.OnEvent('Change', hhTriggerChangedHandler)
 hhReplacementEdit.OnEvent('Change', hhActivateFilterHandler)
@@ -259,7 +259,7 @@ hhCountHoststringsAndFixesButton.OnEvent('Click', hhStringsAndFixesHandler)
 hhToggleExamButtonHandler(Visibility := False)
 hhToggleButtonsControlHandler(Visibility := False)
 
-#HotIf WinActive(hhFormName)
+#HotIf WinActive(hhNameForGUITitleBar)
 
     $Enter::
     {
@@ -308,7 +308,7 @@ hhToggleButtonsControlHandler(Visibility := False)
 
 #HotIf
 
-Hotkey(hh_Hotkey, CheckClipboard)
+Hotkey(hhGUIHotkey, hhAddNewHotstring)
 
 hhRunLoggerHandler(buttonIdentifier)
 {
@@ -355,20 +355,16 @@ hhToggleExamButtonHandler(Visibility := False)
     }
 }
 
-CheckClipboard(*)
+hhAddNewHotstring(*)
 {
     hhTriggerLabel.SetFont(hhFontColor)
 
     Global ClipboardOld := ClipboardAll()
 
     Global triggerBeforeTrimming
-    Global triggerBeforeThisTrim
-
     Global replacementBeforeTrimming
-    Global replacementBeforeThisTrim
 
-    Global triggerAfterThisTrim
-    ; Global replacementAfterThisTrim
+    Global replacementBeforeThisTrim
 
     hsRegex := "(?Jim)^:(?<Opts>[^:]+)*:(?<Trig>[^:]+)::(?:f\((?<Repl>[^,)]*)[^)]*\)|(?<Repl>[^;\v]+))?(?<fCom>\h*;\h*(?:\bFIXES\h*\d+\h*WORDS?\b)?(?:\h;)?\h*(?<mCom>.*))?$"
     hhReplacementMatchesEdit.CurrMatches := ""
@@ -381,13 +377,12 @@ CheckClipboard(*)
 
     If RegExMatch(hotstringFromClipboard, hsRegex, &hotstringFromRegex)
     {
-        hhTriggerEdit.text := hotstringFromRegex.Trig
-        hhOptionsEdit.Value := hotstringFromRegex.Opts
+        hhTriggerEdit.text := hotstringFromRegex.Trig, hhOptionsEdit.Value := hotstringFromRegex.Opts
 
         sleep(200)
 
-        hhCurrentTrigger := triggerBeforeThisTrim := triggerBeforeTrimming := hhCurrentTrigger.text := hotstringFromRegex.Trig := Trim(hotstringFromRegex.Trig, '"')
-        hhCurrentReplacement := replacementBeforeThisTrim := replacementBeforeTrimming := hhReplacementEdit.text := hotstringFromRegex.Repl := Trim(hotstringFromRegex.Repl, '"')
+        hhCurrentTrigger := triggerBeforeTrimming := hhCurrentTrigger.text := Trim(hotstringFromRegex.Trig, '"')
+        hhCurrentReplacement := replacementBeforeThisTrim := replacementBeforeTrimming := hhReplacementEdit.text := Trim(hotstringFromRegex.Repl, '"')
         hhCommentEdit.text := hotstringFromRegex.mCom
 
         hhBeginRadio.Value := InStr(hotstringFromRegex.Opts, "*") ? (InStr(hotstringFromRegex.Opts, "?") ? 0 : 1) : 0
@@ -471,70 +466,67 @@ NormalStartup(stringTrigger, stringReplacement)
 
 ExamineWords(stringTrigger, stringReplacement)
 {
-    Global beginning := ""
+    Global overlapBeginningSubstring := ""
     Global typo := ""
     Global fix := ""
-    Global ending := ""
+    Global overlapEndSubstring := ""
 
     SubTogSize(0, 0)
     hh.Show('Autosize yCenter')
 
-    ostrT := stringTrigger
-    ostrR := stringReplacement
-    LenT := strLen(stringTrigger)
-    LenR := strLen(stringReplacement)
+    originalTrigger := stringTrigger, originalReplacement := stringReplacement
 
-    LoopNum := min(LenT, LenR)
-    arrayT := StrSplit(stringTrigger)
-    arrayR := StrSplit(stringReplacement)
 
-    If ostrT = ostrR
+    If originalTrigger = originalReplacement
     {
-        deltaString := "[ " ostrT " | " ostrR " ]"
+        deltaString := "[ " originalTrigger " | " originalReplacement " ]"
         found := false
     }
     else
     {
+        originalTriggerLength := strLen(stringTrigger), originalReplacementLength := strLen(stringReplacement)
+
+        LoopNum := min(originalTriggerLength, originalReplacementLength)
+
+        arrayOriginalTrigger := StrSplit(stringTrigger), arrayOriginalReplacement := StrSplit(stringReplacement)
+
         Loop LoopNum
         {
-            If (arrayT[A_Index] = arrayR[A_Index])
-                beginning .= arrayT[A_Index]
+            If (arrayOriginalTrigger[A_Index] = arrayOriginalReplacement[A_Index])
+                overlapBeginningSubstring .= arrayOriginalTrigger[A_Index]
             else
                 break
         }
 
         Loop LoopNum
         {
-            esubT := (arrayT[(LenT - A_Index) + 1])
-            esubR := (arrayR[(LenR - A_Index) + 1])
+            esubT := (arrayOriginalTrigger[(originalTriggerLength - A_Index) + 1])
+            esubR := (arrayOriginalReplacement[(originalReplacementLength - A_Index) + 1])
             If (esubT = esubR)
-                ending := esubT . ending
+                overlapEndSubstring := esubT . overlapEndSubstring
             else
                 break
         }
 
-        If (strLen(beginning) + strLen(ending)) > LoopNum
+        If (strLen(overlapBeginningSubstring) + strLen(overlapEndSubstring)) > LoopNum
         {
-            delta := (LenT > LenR)
-                ? " [ " . subStr(ending, 1, (LenT - LenR)) . " |  ] "
-                    : (LenR > LenT)
-                        ? " [  |  " . subStr(ending, 1, (LenR - LenT)) . " ] "
-                        : ""
+            delta := (originalTriggerLength > originalReplacementLength)
+                ? " [ " . subStr(overlapEndSubstring, 1, (originalTriggerLength - originalReplacementLength)) . " |  ] "
+                    : " [  |  " . subStr(overlapEndSubstring, 1, (originalReplacementLength - originalTriggerLength)) . " ] "
         }
         Else
         {
-            typo := (strLen(beginning) > strLen(ending)) ? StrReplace(ostrT, beginning, "") : StrReplace(ostrT, ending, "")
-            typo := (strLen(beginning) > strLen(ending)) ? StrReplace(typo, ending, "") : StrReplace(typo, beginning, "")
-            fix := (strLen(beginning) > strLen(ending)) ? StrReplace(ostrR, beginning, "") : StrReplace(ostrR, ending, "")
-            fix := (strLen(beginning) > strLen(ending)) ? StrReplace(fix, ending, "") : StrReplace(fix, beginning, "")
+            typo := StrReplace(originalTrigger, overlapBeginningSubstring, "")
+            fix := StrReplace(originalReplacement, overlapBeginningSubstring, "")
             delta := " [ " . typo . " | " . fix . " ] "
         }
-        deltaString := beginning . delta . ending
-
+        deltaString := overlapBeginningSubstring . delta . overlapEndSubstring
     }
+
     hhTypoLabel.text := deltaString
 
     ViaExamButt := "Yes"
+
     hhActivateFilterHandler(ViaExamButt)
 
     If (hhExamButton.text = "Exam")
@@ -564,22 +556,20 @@ hhSizeToggleHandler(*)
         If (hhExamButton.text = "Done")
         {
             hhToggleExamButtonHandler(Visibility := False)
-            ExamPaneOpen := 0
             hhToggleButtonsControlHandler(Visibility := False)
-            ControlPaneOpen := 0
+            ExamPaneOpen := ControlPanelOpen := 0
             hhExamButton.text := "Exam"
         }
         hFactor := HeightSizeIncrease
         SubTogSize(hFactor, WidthSizeIncrease)
-        hh.Show('Autosize yCenter')
     }
-    If (hh['SizeTog'].text = "Make Smaller")
+    Else
     {
         hh['SizeTog'].text := "Make Bigger"
         hFactor := 0
         SubTogSize(0, 0)
-        hh.Show('Autosize yCenter')
     }
+    hh.Show('Autosize yCenter')
     return
 }
 
@@ -615,12 +605,12 @@ hhSubFuncExamControlHandler(*)
     (ControlPaneOpen = 1) ? hhToggleButtonsControlHandler(False)
         : hhToggleButtonsControlHandler(True)
 
-    ControlPaneOpen := (ControlPaneOpen = 1)
-        ? 0
-            : 1
+        ControlPaneOpen := (ControlPaneOpen = 1)
+            ? 0
+                : 1
 
-    hhToggleExamButtonHandler(False)
-    hh.Show('Autosize yCenter')
+        hhToggleExamButtonHandler(False)
+        hh.Show('Autosize yCenter')
 }
 
 hhExamHandler(*)
@@ -670,9 +660,8 @@ hhToggleSymbolsHandler(*)
         hhReplacementEdit.value := togReplaceString
         hhReplacementEdit.Opt("+Readonly")
         hhAppendButton.Enabled := false
-        hh.Show('Autosize yCenter')
     }
-    If (hh['SymTog'].text = "- Symbols")
+    Else
     {
         hh['SymTog'].text := "+ Symbols"
         togReplaceString := hhReplacementEdit.text
@@ -682,16 +671,14 @@ hhToggleSymbolsHandler(*)
         hhReplacementEdit.value := togReplaceString
         hhReplacementEdit.Opt("-Readonly")
         hhAppendButton.Enabled := true
-        hh.Show('Autosize yCenter')
     }
+    hh.Show('Autosize yCenter')
     return
 }
 
 hhTriggerChangedHandler(*)
 {
-    Global triggerBeforeThisTrim := ""
-    Global triggerAfterThisTrim := ""
-
+    Static triggerBeforeThisTrim := ""
     triggerAfterThisTrim := hhTriggerEdit.text
 
     If (triggerAfterThisTrim != triggerBeforeThisTrim && ExamPaneOpen = 1)
@@ -716,40 +703,26 @@ hhTriggerChangedHandler(*)
 
 hhSaveAsFunctionHandler(*)
 {
-    If (hhMakeFunctionToggle.Value = 1)
-    {
-        hhOptionsEdit.text := "B0X" StrReplace(StrReplace(hhOptionsEdit.text, "B0", ""), "X", "")
-    }
-    else
-    {
-        hhOptionsEdit.text := StrReplace(StrReplace(hhOptionsEdit.text, "B0", ""), "X", "")
-    }
+    hhOptionsEdit.text := StrReplace(StrReplace(hhOptionsEdit.text, "B0", ""), "X", "")
 }
 
 hhAppendHandler(*)
 {
-    Global tMyDefaultOpts := hhOptionsEdit.text
-    Global tTriggerString := hhTriggerEdit.text
-    Global tReplaceString := hhReplacementEdit.text
-
-    CombinedValidMsg := ValidationFunction(tMyDefaultOpts, tTriggerString, tReplaceString)
+    CombinedValidMsg := ValidationFunction(hhOptionsEdit.text, hhTriggerEdit.text, hhReplacementEdit.text)
 
     If (!InStr(CombinedValidMsg, "-Okay.", , , 3))
-        biggerMsgBox(tMyDefaultOpts, tTriggerString, tReplaceString, CombinedValidMsg, 1)
+        biggerMsgBox(hhOptionsEdit.text, hhTriggerEdit.text, hhReplacementEdit.text, CombinedValidMsg, 1)
     else
     {
-        Appendit(tMyDefaultOpts, tTriggerString, tReplaceString)
+        Appendit()
         return
     }
 }
 
 hhCheckHandler(*)
 {
-    Global tMyDefaultOpts := hhOptionsEdit.text
-    Global tTriggerString := hhTriggerEdit.text
-    Global tReplaceString := hhReplacementEdit.text
-    CombinedValidMsg := ValidationFunction(tMyDefaultOpts, tTriggerString, tReplaceString)
-    biggerMsgBox(tMyDefaultOpts, tTriggerString, tReplaceString, CombinedValidMsg, 0)
+    CombinedValidMsg := ValidationFunction(hhOptionsEdit.text, hhTriggerEdit.text, hhReplacementEdit.text)
+    biggerMsgBox(hhOptionsEdit.text, hhTriggerEdit.text, hhReplacementEdit.text, CombinedValidMsg, 0)
     Return
 }
 
@@ -786,30 +759,30 @@ biggerMsgBox(options, trigger, replacement, thisMess, bbShowAppendButton := 0)
     bbTriggerEdit := bb.Add('Edit', (strLen(bbHotstringValidityMessage) > 104 ? ' w600 ' : ' ') (inStr(bbHotstringValidityMessage, '-Okay.') ? myGreen : myRed) edtSharedSettings hhGUIColor, bbHotstringValidityMessage)
 
     bbReplacementEdit := bb.Add('Edit', (strLen(arrayValidityCheckResults[3]) > 104 ? ' w600 ' : ' ') (inStr(arrayValidityCheckResults[3], '-Okay.') ? myGreen : myRed) edtSharedSettings hhGUIColor, arrayValidityCheckResults[3])
-    
+
     bb.SetFont('s11 ' hhFontColor)
     bbAppendWithConflictLabel := (bbShowAppendButton = 1) ? bb.Add('Text', , "==============================`nAppend HotString Anyway?") : ''
-    
+
     bbAppendButton := bb.Add('Button', , 'Append Anyway')
-    
+
     if (bbShowAppendButton != 1)
         bbAppendButton.Visible := False
-        
+
     bbCloseButton := bb.Add('Button', 'x+5 Default', 'Close')
-        
+
     If not inStr(bbHotstringValidityMessage, '-Okay.')
         bbAutoLookUpToggle := bb.Add('Checkbox', 'x+5 Checked' AutoLookupFromValidityCheck, 'Auto Lookup`nin editor')
-        
+
     bb.Show('yCenter x' (A_ScreenWidth / 2))
-        
+
     WinSetAlwaysontop(1, "A")
 
     bbTriggerEdit.OnEvent('Focus', findInScript)
-    bbAppendButton.OnEvent('Click', (*) => Appendit(tMyDefaultOpts, trigger, replacement))
+    bbAppendButton.OnEvent('Click', (*) => Appendit())
     bbAppendButton.OnEvent('Click', (*) => bb.Destroy())
     bbCloseButton.OnEvent('Click', (*) => bb.Destroy())
     bb.OnEvent('Escape', (*) => bb.Destroy())
-    }
+}
 
 findInScript(*)
 {
@@ -823,7 +796,7 @@ findInScript(*)
     A_Clipboard := ""
     activeWin := WinActive("A")
     activeControl := ControlGetFocus("ahk_ID " activeWin)
-    
+
     if (GetKeyState("LButton", "P"))
         KeyWait("LButton", "U")
 
@@ -841,7 +814,6 @@ findInScript(*)
             Msgbox("Failed to open " filenameThisScript " in your editor.")
             Return
         }
-        
         else
             WinActivate(filenameThisScript)
     }
@@ -854,7 +826,7 @@ findInScript(*)
         SendInput("^v")
     }
     WinActivate("ahk_ID " activeWin)
-    ControlFocus("ahk_ID " activeWin, "ahk_id " activeControl)
+    ControlFocus("ahk_ID " activeWin, "ahk_ID " activeControl)
 }
 
 ValidationFunction(paramOpts, paramTrigger, paramReplacement)
@@ -866,6 +838,7 @@ ValidationFunction(paramOpts, paramTrigger, paramReplacement)
     validOpts := (paramOpts = "") ? "Okay." : CheckOptions(paramOpts)
 
     validHot := ""
+
     if (paramTrigger = "" || paramTrigger = myPrefix || paramTrigger = mySuffix)
         validHot := "HotString box should not be empty."
     else if InStr(paramTrigger, ":")
@@ -898,11 +871,11 @@ ValidationFunction(paramOpts, paramTrigger, paramReplacement)
 
     validRep := (paramReplacement = "")
         ? "Replacement string box should not be empty."
-        : (SubStr(paramReplacement, 1, 1) = ":")
-            ? "Don't include the colons."
-            : (paramReplacement = paramTrigger)
-                ? "Replacement string SAME AS Trigger string."
-                : "Okay."
+            : (SubStr(paramReplacement, 1, 1) = ":")
+                ? "Don't include the colons."
+                : (paramReplacement = paramTrigger)
+                    ? "Replacement string SAME AS Trigger string."
+                    : "Okay."
 
     CombinedValidMsg := "OPTIONS BOX `n-"
         . validOpts
@@ -990,80 +963,45 @@ CheckWordEndingConflicts(LineNum, Line, newTrigger, newOptions, loopTrigger, loo
         : ""
 }
 
-Appendit(tMyDefaultOpts, tTriggerString, tReplaceString)
+Appendit()
 {
-    Global pathThisScript
-    Global rMatches
-    Global tMatches
-    Global AutoCommentFixesAndMisspells
-    Global AutoEnterNewEntry
+    Global pathUserHotstrings
     Global targetWindow
-    Global hhMakeFunctionToggle
-    Global hhCommentEdit
-    Global hhTriggerMatchesEdit
-    Global hhReplacementMatchesEdit
-    Global hhOptionsEdit
-    Global hhTriggerEdit
-    Global hhReplacementEdit
-    Global hh
-    Global IsMultiLine
+    Global rMatches, tMatches
 
-    WholeStr := ""
-    tComStr := ""
-    aComStr := ""
-
-    tMyDefaultOpts := hhOptionsEdit.text
-    tTriggerString := hhTriggerEdit.text
-    tReplaceString := hhReplacementEdit.text
+    stringComment := wholeStr := ""
 
     If (rMatches > 0) and (AutoCommentFixesAndMisspells = 1)
     {
-        Misspells := ""
-        Misspells := hhTriggerMatchesEdit.Value
-        If (tMatches > 3)
-            Misspells := ", but misspells " . tMatches . " words !!! "
-        Else If (Misspells != "")
-        {
-            Misspells := SubStr(StrReplace(Misspells, "`n", " (), "), 1, -2) . ". "
-            Misspells := ", but misspells " . Misspells
-        }
-        aComStr := "Fixes " . rMatches . " words " . Misspells
-        aComStr := StrReplace(aComStr, "Fixes 1 words ", "Fixes 1 word ")
+        stringComment := " Fixes "
+            . rMatches
+            . " words "
+            . (tMatches > 3)
+                ? "but misspells "
+                . tMatches
+                . " words !!! "
+                : (hhTriggerMatchesEdit.Value != "")
+                    ? "but misspells "
+                    . SubStr(StrReplace(hhTriggerMatchesEdit.Value, "`n", " (), "), 1, -2)
+                    . ". "
+                    : ""
+
     }
 
-    fopen := '', fclose := ''
-    If ((StrLen(tTriggerString) - StrLen(StrReplace(tTriggerString, " ")) > 2) || InStr(tReplaceString, "`n"))
-        IsMultiLine := 1
-    If (hhMakeFunctionToggle.Value = 1) and (IsMultiLine = 0)
-    {
-        tMyDefaultOpts := "*" . StrReplace(tMyDefaultOpts, "B0X", "")
-        fopen := '_f("'
-        fclose := '")'
-    }
+    stringComment := "`t`;`t" . ((stringComment != "") ? stringComment . " // " . hhCommentEdit.text : hhCommentEdit.text)
 
-    If (hhCommentEdit.text != "") || (aComStr != "")
-        tComStr := " `; " . aComStr . hhCommentEdit.text
+    WholeStr := "`n:"
+        . hhOptionsEdit.text
+        . ":"
+        . hhTriggerEdit.text
+        . "::"
+        . ((hhMakeFunctionToggle.Value = 1) ? '_F("' : "")
+        . ((InStr(hhReplacementEdit.text, "`n")) ? StrReplace(hhReplacementEdit.text, "`n", "`n") : hhReplacementEdit.text)
+        . ((hhMakeFunctionToggle.Value = 1) ? '")' : "")
+        . stringComment
 
-    If InStr(tReplaceString, "`n")
-    {
-        openParenth := subStr(tReplaceString, -1) = "`t" ? "(RTrim0`n" : "(`n"
-        WholeStr := ":" . tMyDefaultOpts . ":" . tTriggerString . "::" . tComStr . "`n" . fopen . openParenth . tReplaceString . "`n)" . fclose
-    }
-    Else
-        WholeStr := ":" . tMyDefaultOpts . ":" . tTriggerString . "::" . fopen . tReplaceString . fclose . tComStr
-
-    If GetKeyState("Shift")
-    {
-        A_Clipboard := WholeStr
-    }
-    else
-    {
-        FileAppend("`n" WholeStr, pathUserHotstrings)
-        If (AutoEnterNewEntry = 1)
-            ChangeActiveEditField(targetWindow)
-        If not getKeyState("Ctrl")
-            Reload()
-    }
+    FileAppend(WholeStr, pathUserHotstrings)
+    Reload()
 }
 
 ChangeActiveEditField(*)
@@ -1167,50 +1105,29 @@ hhWordlistHandler(*)
 
 hhButtonCancelHandler(*)
 {
-    Global hh
-    Global hhTriggerEdit := ""
-    Global hhReplacementEdit := ""
-    Global ClipboardOld
-    Global tArrStep
-    Global rArrStep
-
+    Global ClipboardOld, tArrStep, rArrStep
     hh.Hide()
-    hhOptionsEdit.value := ""
-    tArrStep := []
-    rArrStep := []
+    hhTriggerEdit.value := hhReplacementEdit.value := hhOptionsEdit.value := hhCommentEdit.value := ""
+    tArrStep := rArrStep := []
     A_Clipboard := ClipboardOld
 }
 
-hhTrimLeftHandler(*)
+hhTrimHandler(direction := "", *)
 {
-    tText := hhTriggerEdit.value
-    tArrStep.push(tText)
-    tText := subStr(tText, 2)
-    hhTriggerEdit.value := tText
-    rText := hhReplacementEdit.value
-    rArrStep.push(rText)
-    rText := subStr(rText, 2)
-    hhReplacementEdit.value := rText
-    hhUndoButton.Enabled := true
-    hhTriggerChangedHandler()
-}
+    global tArrStep, rArrStep
 
-hhTrimRightHandler(*)
-{
-    tText := hhTriggerEdit.value
-    tArrStep.push(tText)
-    tText := subStr(tText, 1, strLen(tText) - 1)
-    hhTriggerEdit.value := tText
-    rText := hhReplacementEdit.value
-    rArrStep.push(rText)
-    rText := subStr(rText, 1, strLen(rText) - 1)
-    hhReplacementEdit.value := rText
+    tArrStep.push(hhTriggerEdit.value), rArrStep.push(hhReplacementEdit.value)
+
+    hhTriggerEdit.value := (direction.name = "butRTrim") ? subStr(hhTriggerEdit.value, 1, strLen(hhTriggerEdit.value) - 1) : subStr(hhTriggerEdit.value, 2)
+    hhReplacementEdit.value := (direction.name = "butRTrim") ? subStr(hhReplacementEdit.value, 1, strLen(hhReplacementEdit.value) - 1) : subStr(hhReplacementEdit.value, 2)
     hhUndoButton.Enabled := true
+
     hhTriggerChangedHandler()
 }
 
 hhUndoHandler(*)
 {
+    Global tArrStep, rArrStep
     If GetKeyState("Shift")
         GoReStart()
     else If (tArrStep.Length > 0) and (rArrStep.Length > 0)
@@ -1224,38 +1141,30 @@ hhUndoHandler(*)
         hhUndoButton.Enabled := false
     }
 }
+
 GoReStart(*)
 {
-    Global triggerBeforeTrimming
-    Global replacementBeforeTrimming
-    Global tArrStep
-    Global rArrStep
+    Global triggerBeforeTrimming, replacementBeforeTrimming, tArrStep, rArrStep
 
-    If !triggerBeforeTrimming and !OrigReplacment
-    {
-        MsgBox("Can't restart -- Nothing in memory...")
-    }
-    Else
-    {
-        hhTriggerEdit.Value := triggerBeforeTrimming
-        hhReplacementEdit.Value := replacementBeforeTrimming
-        hhUndoButton.Enabled := false
-        tArrStep := []
-        rArrStep := []
-        hhActivateFilterHandler()
-    }
+    hhTriggerEdit.Value := (triggerBeforeTrimming) ? triggerBeforeTrimming : ""
+    hhReplacementEdit.Value := (replacementBeforeTrimming) ? replacementBeforeTrimming : ""
+    tArrStep := rArrStep := []
+
+    hhUndoButton.Enabled := false
+
+    hhActivateFilterHandler()
 }
 
-clickLast := 0
 hhActivateMiddleHandler(*)
 {
-    Global clickCurrent := A_TickCount
+    Static clickLast := 0
+    Static clickCurrent := A_TickCount
     if (clickCurrent - clickLast < 500)
     {
         hhMidRadio.Value := 0
         hhOptionsEdit.text := strReplace(strReplace(hhOptionsEdit.text, "?", ""), "*", "")
     }
-    Global clickLast := A_TickCount
+    clickLast := A_TickCount
     hhActivateFilterHandler()
 }
 
@@ -1265,12 +1174,11 @@ hhActivateFilterHandler(ViaExamButt := "No", *)
     Global tMatches := 0
     Global pathWordList
     Global hhFontColor
-    Global hhReplacementEdit
 
     hhCurrentOptions := hhOptionsEdit.text
 
-    hhCurrentTrigger := hhTriggerEdit.Value
-    hhCurrentTrigger := (hhCurrentTrigger != "") ? Trim(hhCurrentTrigger) : " "
+    hhCurrentTrigger := Trim(hhTriggerEdit.Value)
+    hhCurrentTrigger := (hhCurrentTrigger != "") ? hhCurrentTrigger : " "
 
     rFind := Trim(hhReplacementEdit.Value, "`n`t ")
     rFind := (rFind != "") ? rFind : " "
@@ -1286,7 +1194,7 @@ hhActivateFilterHandler(ViaExamButt := "No", *)
             hhMidRadio.value := 0, hhBeginRadio.value := 1, hhEndRadio.value := 0
         Else If (!InStr(hhCurrentOptions, "*") and InStr(hhCurrentOptions, "?"))
             hhMidRadio.value := 0, hhBeginRadio.value := 0, hhEndRadio.value := 1
-        Else 
+        Else
             hhMidRadio.value := 0, hhBeginRadio.value := 0, hhEndRadio.value := 0
     }
 
@@ -1311,10 +1219,23 @@ hhActivateFilterHandler(ViaExamButt := "No", *)
             }
         }
     }
-    hhCurrentOptions := StrReplace(hhCurrentOptions, "?", "")
-    hhCurrentOptions := StrReplace(hhCurrentOptions, "*", "")
-    hhCurrentOptions .= (hhMidRadio.value = 1) ? "*?" : (hhEndRadio.value = 1) ? "?" : (hhBeginRadio.value = 1) ? "*" : ""
-    hhOptionsEdit.text := hhCurrentOptions
+
+    if (hhMidRadio.value = 1)
+    {
+        hhCurrentOptions := hhCurrentOptions . "*?"
+    }
+    else if (hhEndRadio.value = 1)
+    {
+        hhCurrentOptions := StrReplace(hhCurrentOptions, "*", "")
+        hhCurrentOptions := "?" . hhCurrentOptions
+    }
+    else if (hhBeginRadio.value = 1)
+    {
+        hhCurrentOptions := StrReplace(hhCurrentOptions, "?", "")
+        hhCurrentOptions := (InStr(hhCurrentOptions, "*")) ? hhCurrentOptions : "*" . hhCurrentOptions
+    }
+    if (inStr(hhCurrentOptions, "**"))
+        hhOptionsEdit.text := hhCurrentOptions
 
     hhTriggerMatchesEdit.Value := tFilt
     hhMisspellsListLabel.Text := "Misspells [" . tMatches . "]"
@@ -1371,115 +1292,12 @@ handleEditScript(*)
         try
             Run('"' pathDefaultEditor '" "' A_ScriptFullPath '"')
         Catch
-            Msgbox 'cannot run ' filenameThisScript
+            Msgbox('cannot run ' filenameThisScript)
 }
-
-+!p::
-handlePrinterTool(*)
-{
-    Global df := ""
-    Global printerlist := ""
-
-    defaultPrinter := RegRead("HKCU\Software\Microsoft\Windows NT\CurrentVersion\Windows", "Device")
-
-    pfontColor := hhFontColor
-
-    Loop Reg, "HKCU\Software\Microsoft\Windows NT\CurrentVersion\devices"
-        printerlist := printerlist . "" . A_loopRegName . "`n"
-
-    df := Gui()
-    df.Title := "Default Printer Changer"
-    df.BackColor := hhGUIColor
-
-    df.SetFont("s12 bold c" . pFontColor)
-    df.Add("Text", , "Set A Default Printer ...")
-    df.OnEvent("Close", ButtonCancel)
-    df.OnEvent("Escape", ButtonCancel)
-
-    df.SetFont("s11")
-    printerlist := SubStr(printerlist, 1, strlen(printerlist) - 2)
-    Loop Parse, printerlist, "`n"
-        df.AddRadio((InStr(defaultPrinter, A_LoopField) ? "checked " : "") . "vRadio" . a_index, a_loopfield)
-
-    df.AddButton("default", "Set Printer").OnEvent("Click", ButtonSet)
-    df.AddButton("x+10", "Print &Queue").OnEvent("Click", ButtonQue)
-    df.AddButton("x+10", "Control Panel").OnEvent("Click", ButtonCtrlPanel)
-    df.AddButton("x+10", "Cancel").OnEvent("Click", ButtonCancel)
-
-    df.Show()
-}
-
-ButtonSet(*)
-{
-    Global df
-    Global printerList
-
-    Loop Parse, printerlist, "`n"
-    {
-        thisRadioVal := df["Radio" . a_index].value
-        If thisRadioVal != 0
-            newDefault := a_loopfield
-    }
-    RunWait("C:\Windows\System32\RUNDLL32.exe PRINTUI.DLL, PrintUIEntry /y /n '" newDefault "'")
-    df.Destroy()
-}
-
-ButtonQue(*)
-{
-    Global df
-    Global PrinterList
-
-    viewThis := ""
-    Loop Parse, printerlist, "`n"
-    {
-        thisRadioVal := df["Radio" . a_index].value
-        If thisRadioVal != 0
-            viewThis := a_loopfield
-    }
-    RunWait("rundll32 printui.dll, PrintUIEntry /o /n '" viewThis "'")
-    df.Destroy()
-}
-
-ButtonCtrlPanel(*)
-{
-    Global df
-    Global PrinterList
-
-    Run("control printers")
-    df.Destroy()
-    printerlist := ""
-}
-
-ButtonCancel(*)
-{
-    Global df
-    Global PrinterList
-
-    df.Destroy()
-    printerlist := ""
-}
-
-!+u::
-handleUptime(*)
-{
-    MsgBox("handleUptime is:`n" . handleUptime(A_TickCount))
-    handleUptime(ms)
-    {
-        VarSetStrCapacity(&b, 256)
-        DllCall("GetDurationFormat", "uint", 2048, "uint", 0, "ptr", 0, "int64", ms * 10000, "wstr", " d 'days, 'h' hrs, 'm' mins'", "wstr", b, "int", 256)
-        b := StrReplace(b, " 0 days,")
-        b := StrReplace(b, " 0 hrs,")
-        b := StrReplace(b, " 0 mins,")
-        b := StrReplace(b, " 1 days,", "1 day,")
-        b := StrReplace(b, " 1 hrs,", " 1 hr,")
-        b := StrReplace(b, " 1 mins,", " 1 min,")
-        return b
-    }
-}
-
 
 !+F3::MsgBox(lastTrigger, "Trigger", 0)
 
+#MaxThreadsPerHotkey 20
 
 
 _F(replacement?, opts?, sendFunc?)
@@ -1489,7 +1307,7 @@ _F(replacement?, opts?, sendFunc?)
     static DefaultSendMode := A_SendMode
     static DefaultKeyDelay := 0
     static DefaultTextMode := ""
-    static DefaultBS := 0xFFFFFFF0
+    static DefaultBS := 0
     static DefaultCustomSendFunc := ""
     static DefaultCaseConform := true
     static __Init := HotstringRecognizer.Start()
@@ -1557,14 +1375,18 @@ _F(replacement?, opts?, sendFunc?)
     CustomSendFunc := sendFunc ?? DefaultCustomSendFunc
     CaseConform := DefaultCaseConform
 
-    SendMode DefaultSendMode
+    SendMode(DefaultSendMode)
     if InStr(DefaultSendMode, "Play")
-        SetKeyDelay , DefaultKeyDelay, "Play"
+        SetKeyDelay(DefaultKeyDelay, "Play")
     else
-        SetKeyDelay DefaultKeyDelay
+        SetKeyDelay(DefaultKeyDelay)
 
     if IsSet(opts) && InStr(opts, "B")
+    {
+        BSCount := ""
         BS := RegExMatch(opts, "i)[fF]|[-0-9]+", &BSCount) ? (BSCount[0] = "f" ? 0xFFFFFFFF : Integer(BSCount[0])) : 0xFFFFFFF0
+
+    }
 
     if RegExMatch(ThisHotkey, "^:([^:]+):", &opts)
     {
@@ -1586,9 +1408,9 @@ _F(replacement?, opts?, sendFunc?)
             {
                 i += StrLen(KeyDelay[0]) + 1, KeyDelay := Integer(KeyDelay[0])
                 if InStr(A_SendMode, "Play")
-                    SetKeyDelay , KeyDelay, "Play"
+                    SetKeyDelay(KeyDelay, "Play")
                 else
-                    SetKeyDelay KeyDelay
+                    SetKeyDelay(KeyDelay)
                 continue
             }
             else if o = "T"
@@ -1609,22 +1431,27 @@ _F(replacement?, opts?, sendFunc?)
             replacement := (BS < 0xFFFFFFF0 ? replacement : StrUpper(SubStr(replacement, 1, 1))) SubStr(replacement, 2), Trigger := StrUpper(SubStr(Trigger, 1, 1)) SubStr(Trigger, 2)
     }
 
-    if BS
+    if BS = 0
     {
-        MaxBS := StrLen(RegExReplace(Trigger, "s)((?>\P{M}(\p{M}|\x{200D}))+\P{M})|\X", "_")) + !Omit
 
-        if BS = 0xFFFFFFF0
+        TrigLen := StrLen(trigger)
+
+        trigL := StrSplit(trigger)
+        replL := StrSplit(replacement)
+        ignorLen := 0
+
+        Loop Min(trigL.Length, replL.Length)
         {
-            BoundGraphemeCallout := GraphemeCallout.Bind(info := {
-                CompareString: replacement,
-                GraphemeLength: 0,
-                Pos: 1
-            })
-            RegExMatch(Trigger, "s)((?:(?>\P{M}(\p{M}|\x{200D}))+\P{M})|\X)(?CBoundGraphemeCallout)")
-            BS := MaxBS - info.GraphemeLength, replacement := SubStr(replacement, info.Pos)
+            If (trigL[A_Index] == replL[A_Index])
+                ignorLen++
+            else
+                break
         }
-        else
-            BS := BS = 0xFFFFFFFF ? MaxBS : BS > 0 ? BS : MaxBS + BS
+
+        replacement := SubStr(replacement, (ignorLen + 1))
+        BS := (ignorLen != 0) ? ignorLen : TrigLen
+
+
     }
 
     if TextMode || !CustomSendFunc
@@ -1642,14 +1469,16 @@ _F(replacement?, opts?, sendFunc?)
     HSInputBuffer.Stop()
 
     if InStr(A_SendMode, "Play")
-        SetKeyDelay , PrevKeyDurationPlay, "Play"
+        SetKeyDelay(PrevKeyDurationPlay, "Play")
     else
-        SetKeyDelay PrevKeyDelay
-        SendMode(PrevSendMode)
+        SetKeyDelay(PrevKeyDelay)
 
-        GraphemeCallout(info, m, *) => SubStr(info.CompareString, info.Pos, len := StrLen(m[0])) == m[0] ? (info.Pos += len, info.GraphemeLength++, 1) : -1
-        KeepForLog := A_ThisHotkey "`n"
-        SetTimer(keepText.Bind(KeepForLog), -1)
+    SendMode(PrevSendMode)
+
+    GraphemeCallout(info, m, *) => SubStr(info.CompareString, info.Pos, len := StrLen(m[0])) == m[0] ? (info.Pos += len, info.GraphemeLength++, 1) : -1
+    KeepForLog := A_ThisHotkey "`n"
+    SetTimer(keepText, -1)
+
 }
 
 class HotstringRecognizer
@@ -1813,21 +1642,21 @@ class InputBuffer
             this.InputHook.Start()
         if this.Mouse
         {
-            HotIf this.HotIfIsActive
+            HotIf(this.HotIfIsActive)
             if this.Mouse is String && RegExMatch(this.Mouse, "i)I *(\d+)", &lvl)
                 this.SendLevel := Integer(lvl[1])
             opts := this.Mouse is String ? this.Mouse : ("I" this.SendLevel)
-            for key in this.MouseButtons
+            for keystroke in this.MouseButtons
             {
-                if InStr(key, "Wheel")
-                    HotKey key, this.BufferMouse.Bind(this), opts
+                if InStr(keystroke, "Wheel")
+                    HotKey(keystroke, this.BufferMouse.Bind(this), opts)
                 else
                 {
-                    HotKey key, this.BufferMouse.Bind(this, , "Down"), opts
-                    HotKey key " Up", this.BufferMouse.Bind(this), opts
+                    HotKey(keystroke, this.BufferMouse.Bind(this, , "Down"), opts)
+                    HotKey(keystroke " Up", this.BufferMouse.Bind(this), opts)
                 }
             }
-            HotIf
+            HotIf()
         }
     }
     Release()
@@ -1840,24 +1669,27 @@ class InputBuffer
             savedCoordMode := A_CoordModeMouse, CoordMode("Mouse", "Screen"), MouseGetPos(&X, &Y)
 
         PrevSendLevel := A_SendLevel
-        SendLevel this.SendLevel - 1
+        SendLevel(this.SendLevel - 1)
 
         modifierList := ""
         for modifier, state in this.ModifierKeyStates
             if GetKeyState(modifier) != state
                 modifierList .= "{" modifier (state ? " Down" : " Up") "}"
         if modifierList
-            Send modifierList
+            Send(modifierList)
 
         while this.Buffer.Length
         {
-            key := this.Buffer.RemoveAt(1)
-            sent.Push(key)
-            if InStr(key, "{Click ")
+            keystroke := this.Buffer.RemoveAt(1)
+            sent.Push(keystroke)
+            if InStr(keystroke, "{Click ")
                 clickSent := true
-            Send("{Blind}" key)
+            if (keystroke = "{ Down}")
+                continue
+            else if (keystroke != "{ Up}")
+                send("{Blind}" keystroke)
         }
-        SendLevel PrevSendLevel
+        SendLevel(PrevSendLevel)
 
         if this.Mouse && clickSent
         {
@@ -1882,16 +1714,17 @@ class InputBuffer
 
         if this.Mouse
         {
-            HotIf this.HotIfIsActive
-            for key in this.MouseButtons
-                HotKey key, "Off"
-            HotIf
+            HotIf(this.HotIfIsActive)
+            for keystroke in this.MouseButtons
+                HotKey(keystroke, "Off")
+            HotIf()
         }
 
         return sent
     }
     GetActiveCount(HotkeyName) => this.ActiveCount
 }
+
 
 #MaxThreadsPerHotkey 5
 keepText(*)
@@ -1911,25 +1744,24 @@ keepText(*)
 
     hyphen := (lih.EndReason = "EndKey") ? " << " : " -- "
     savedUpText .= A_YYYY "-" A_MM "-" A_DD "`t`t" hyphen "`t`t" KeepForLog
-    Appender.bind(savedUpText)
     intervalCounter := 0
     If logIsRunning = 0
         setTimer(Appender, saveIntervalMinutes)
 }
 #MaxThreadsPerHotkey 1
 
-Appender(stringInput := "", *)
+Appender(*)
 {
-    ;Global savedUpText
+    Global savedUpText
     Global logIsRunning
     Global intervalCounter
     Global IntervalsBeforeStopping
-    ; Global TESTING
+    Global filenameACLogger
     Global pathACLogger
 
-    If (stringInput != "")
-        FileAppend(stringInput, pathACLogger)
-    ; savedUpText := ''
+    If (savedUpText != "")
+        FileAppend(savedUpText, pathACLogger)
+    savedUpText := ''
     logIsRunning := 1
     intervalCounter += 1
     If (intervalCounter >= IntervalsBeforeStopping)
@@ -1939,8 +1771,7 @@ Appender(stringInput := "", *)
     }
 }
 
-OnExit Appender
-
+OnExit(Appender)
 
 ^F3::
 hhStringsAndFixesHandler(*)
@@ -2014,21 +1845,22 @@ CopyFilesAndFolders(SourcePattern, DestinationFolder, DoOverwrite := false)
 {
     ErrorCount := 0
     try
-        FileCopy SourcePattern, DestinationFolder, DoOverwrite
+        FileCopy(SourcePattern, DestinationFolder, DoOverwrite)
     catch as Err
         ErrorCount := Err.Extra
     Loop Files, SourcePattern, "D"
     {
         try
-            DirCopy A_LoopFilePath, DestinationFolder "\" A_LoopFileName, DoOverwrite
+            DirCopy(A_LoopFilePath, DestinationFolder "\" A_LoopFileName, DoOverwrite)
         catch
         {
             ErrorCount += 1
-            MsgBox "Could not copy " A_LoopFilePath " into " DestinationFolder
+            MsgBox("Could not copy " A_LoopFilePath " into " DestinationFolder)
         }
     }
     return ErrorCount
 }
+
 
 :B0:Savitr::
 :B0:Vaisyas::
@@ -2071,16 +1903,77 @@ CopyFilesAndFolders(SourcePattern, DestinationFolder, DoOverwrite := false)
     return
 }
 
-#Hotstring ZXB0
+:XB0K2:wc::_F("workers` compensation")
+
+#Hotstring ZXB0O
+
 _F(, "SE")
 
-ACitemsStartAt := A_LineNumber + 6
+ACitemsStartAt := A_LineNumber + 4
 
-#INCLUDE "*i %A_ScriptDir%\Lib\UserHotstringFile.ahk"
-:B0X*:complee::_f("complet") ; Fixes 16 words 
-:B0X?:eacky::_f("eaky") ; Fixes 11 words 
-:B0X*:totalli::_f("totali") ; Fixes 36 words , but misspells totalling (). 
-:B0X:bene::_f("been") ; Fixes 5 words , but misspells 4 words !!! 
-:B0X*:calender::_f("calendar") ; Fixes 4 words , but misspells 6 words !!! 
-:B0X*:thah::_f("tha") ; Fixes 152 words Fix thahnk
-:B0X?:actony::_f("ectomy") ; Fixes 68 words 
+#INCLUDE "%A_ScriptDir%\Auto Launch\Lib\UserHotstringsFile.ahk"
+
+::cleint::_F("client")
+:*?:schg::_F("sch")
+:*:rre::_F("re")
+:*:wizrads::_F("wizards")
+:?:iwill::_F("i will")
+:?*:riws::_F("rwis")
+::ot::_F("to")
+:C?:ptcs::_F("PTCS")
+:?:aind::_F("ained")
+:*:hwa::_F("wha")
+:?*:curret::_F("current")
+:?*:cliet::_F("client")
+:*?:crpt::_F("cript")
+:C*:asj::_F("ADJ")
+:C:ddd::_F("degenerative disc disease")
+:*:noic::_F("notic")
+:?:fiels::_F("files")
+:*:tth::_F("th")
+:*:doot::_F("foot")
+:*:adiv::_F("advi")
+:?:teung::_F("ting")
+:*:lfet::_F("left")
+:*:oop::_F("out-of-pocket")
+:*:porba::_F("proba")
+:*:aprk::_F("park")
+:?:uracne::_F("urance")
+:?:osn::_F("son")
+:*?:crimn::_F("crimin")
+:*:ocne::_F("once")
+:*?:rodc::_F("rodu")
+:*:mpt::_F("not")
+::tere::_F("there")
+:*:joasn::_F("Jason")
+::afall::_F("a fall")
+:?*:amry::_F("army")
+:*:gmial::_F("gmail")
+:?:haty::_F("hat")
+:*:counter s::_F("counters")
+:C*:jaos::_F("Jaso")
+:*C:merus::_F("Merus")
+:C:wcj::_F("workers' compensation judge")
+::tets::_F("test")
+:*:daisy cha::_F("daisy-cha")
+:*:mss::_F("mess")
+:C:ltc::_F("LTC")
+:*:tiral::_F("trial")
+:*:ptu::_F("put")
+:*:decemebr::_F("December")
+:*:rgi::_F("rig")
+:*:oddess::_F("Odyss")
+:?:zuer::_F("zure")
+:*?:eeiv::_F("eiv")
+:?:ndn::_F("nd")
+:C:wcab::_F("Workers' Compensation Appeals Board")
+:*?:covg::_F("cog")
+::sicj::_F("such")
+:*:complee::_f("complet")
+:?:eacky::_f("eaky")
+:*:totalli::_f("totali")
+::bene::_f("been")
+:*:calender::_f("calendar")
+:*:thah::_f("tha")
+:?:actony::_f("ectomy")
+::wc::_F("workers' compensation")
